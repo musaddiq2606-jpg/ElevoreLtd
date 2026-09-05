@@ -7,6 +7,7 @@ A complete responsive storefront with a built-in Node.js + SQLite backend.
 - Elevore LTD branded responsive storefront
 - 23 named products imported from `Products.xlsx`
 - Product search and category filters
+- Real supplier product photography loaded from the product links in `Products.xlsx`
 - Shopping cart saved in the browser
 - Order-enquiry checkout (saved to SQLite)
 - Contact form (saved to SQLite)
@@ -67,4 +68,6 @@ The fallback development key is `change-me-before-production`; do not use it in 
 
 The workbook contains one named product (`Fresh Cup of Cawfee Raven Mug`) without a retail price or SKU. It is imported into the database but shown as **Price on request** and cannot be added to cart until a retail price is provided.
 
-Product artwork is intentionally abstract because the workbook did not contain product image files. You can replace the generated card artwork with your real product photos later without changing the backend data model.
+Product cards now use the supplier product photography associated with the product links in `Products.xlsx`. Images are referenced from Something Different Wholesale; if a supplier image ever becomes unavailable, the storefront automatically falls back to the original Elevore abstract product artwork.
+
+The Fresh Cup of Cawfee Raven Mug had no product URL in the workbook, so its supplier image was matched using the exact product name and supplier product code `RV_90625`.

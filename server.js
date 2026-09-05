@@ -8,7 +8,8 @@ const PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || '0.0.0.0';
 const ADMIN_KEY = process.env.ADMIN_KEY || 'change-me-before-production';
 const PUBLIC_DIR = path.join(__dirname, 'public');
-const DB_PATH = path.join(__dirname, 'elevore.db');
+const DB_PATH = process.env.DB_PATH || (fs.existsSync('/data') ? '/data/elevore.db' : path.join(__dirname, 'elevore.db'));
+fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
 const productsSeed = JSON.parse(fs.readFileSync(path.join(__dirname, 'products.json'), 'utf8'));
 
 const db = new DatabaseSync(DB_PATH);
@@ -28,6 +29,7 @@ db.exec(`
     profit_made REAL DEFAULT 0,
     sku TEXT,
     source_url TEXT,
+    image_url TEXT,
     active INTEGER DEFAULT 1,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
   );
@@ -52,6 +54,9 @@ db.exec(`
   );
 `);
 
+const productColumns = db.prepare('PRAGMA table_info(products)').all().map(x => x.name);
+if (!productColumns.includes('image_url')) db.exec('ALTER TABLE products ADD COLUMN image_url TEXT');
+
 function categoryFor(name) {
   const n = name.toLowerCase();
   if (n.includes('mug')) return 'Mugs';
@@ -65,12 +70,23 @@ function categoryFor(name) {
 }
 
 const insertProduct = db.prepare(`
-  INSERT OR IGNORE INTO products
-  (name, category, buying_price, delivery_cost, amazon_fees, amazon_ppc, retail_price, profit, units_sold, profit_made, sku, source_url)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  INSERT INTO products
+  (name, category, buying_price, delivery_cost, amazon_fees, amazon_ppc, retail_price, profit, units_sold, profit_made, sku, source_url, image_url)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  ON CONFLICT(name) DO UPDATE SET
+    category=excluded.category,
+    buying_price=excluded.buying_price,
+    delivery_cost=excluded.delivery_cost,
+    amazon_fees=excluded.amazon_fees,
+    amazon_ppc=excluded.amazon_ppc,
+    retail_price=excluded.retail_price,
+    profit=excluded.profit,
+    sku=excluded.sku,
+    source_url=excluded.source_url,
+    image_url=excluded.image_url
 `);
 for (const p of productsSeed.filter(x => x.name)) {
-  insertProduct.run(p.name, categoryFor(p.name), p.buyingPrice, p.deliveryCost, p.amazonFees, p.amazonPpc, p.retailPrice, p.profit, p.unitsSold, p.profitMade, p.sku, p.sourceUrl);
+  insertProduct.run(p.name, categoryFor(p.name), p.buyingPrice, p.deliveryCost, p.amazonFees, p.amazonPpc, p.retailPrice, p.profit, p.unitsSold, p.profitMade, p.sku, p.sourceUrl, p.imageUrl);
 }
 
 function json(res, status, payload) {
@@ -105,6 +121,7 @@ function publicProduct(row) {
     category: row.category,
     retailPrice: row.retail_price,
     sku: row.sku,
+    imageUrl: row.image_url,
     available: row.active === 1 && row.retail_price != null
   };
 }
