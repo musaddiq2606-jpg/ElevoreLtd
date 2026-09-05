@@ -14,8 +14,9 @@ function artClass(category){
 function renderProducts(){
   const q=state.search.toLowerCase();
   const visible=state.products.filter(p=>(state.category==='All'||p.category===state.category)&&(!q||p.name.toLowerCase().includes(q)||(p.sku||'').toLowerCase().includes(q)));
-  $('#productGrid').innerHTML=visible.map(p=>`<article class="product-card"><div class="product-art ${slug(p.category)}"><div class="art-object ${artClass(p.category)}"></div></div><div class="product-info"><div class="product-meta"><span>${p.category}</span><span>${p.sku||'Coming soon'}</span></div><h3>${escapeHtml(p.name)}</h3><div class="product-bottom"><span class="price">${money(p.retailPrice)}</span><button class="add" data-id="${p.id}" ${!p.available?'disabled':''} aria-label="Add ${escapeHtml(p.name)} to cart">+</button></div></div></article>`).join('');
+  $('#productGrid').innerHTML=visible.map(p=>`<article class="product-card"><div class="product-art ${slug(p.category)} ${p.imageUrl?'has-image':''}">${p.imageUrl?`<img class="product-image" src="${escapeHtml(p.imageUrl)}" alt="${escapeHtml(p.name)}" loading="lazy" decoding="async" referrerpolicy="no-referrer">`:''}<div class="art-object ${artClass(p.category)}"></div></div><div class="product-info"><div class="product-meta"><span>${p.category}</span><span>${p.sku||'Coming soon'}</span></div><h3>${escapeHtml(p.name)}</h3><div class="product-bottom"><span class="price">${money(p.retailPrice)}</span><button class="add" data-id="${p.id}" ${!p.available?'disabled':''} aria-label="Add ${escapeHtml(p.name)} to cart">+</button></div></div></article>`).join('');
   $('#emptyState').hidden=visible.length>0;
+  document.querySelectorAll('.product-image').forEach(img=>img.addEventListener('error',()=>img.closest('.product-art')?.classList.add('image-failed'),{once:true}));
   document.querySelectorAll('.add').forEach(b=>b.addEventListener('click',()=>addToCart(Number(b.dataset.id))));
 }
 function renderFilters(){
